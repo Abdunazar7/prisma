@@ -12,6 +12,7 @@ import { CreateUserDto, SignInUserDto } from "../user/dto";
 import { UserService } from "../user/user.service";
 import bcrypt from "bcrypt";
 import { Response } from "express";
+import { JwtPayload, ResponseFields, Tokens } from "../../common/types";
 
 @Injectable()
 export class AuthService {
@@ -21,8 +22,8 @@ export class AuthService {
     private readonly userService: UserService
   ) {}
 
-  private async genereteTokens(user: Users) {
-    const paylod = {
+  private async genereteTokens(user: Users):Promise<Tokens> {
+    const paylod: JwtPayload = {
       id: user.id,
       email: user.email,
       is_active: user.is_active,
@@ -57,7 +58,7 @@ export class AuthService {
     };
   }
 
-  async signin(signinUserDto: SignInUserDto, res: Response) {
+  async signin(signinUserDto: SignInUserDto, res: Response): Promise<ResponseFields> {
     const user = await this.prismaService.users.findUnique({
       where: { email: signinUserDto.email },
     });
@@ -82,43 +83,26 @@ export class AuthService {
       maxAge: Number(process.env.COOKIE_TIME),
       httpOnly: true,
     });
-    return { message: "User signed in", id: user.id, accessToken };
+    return { message: "User signed in", userId: user.id, accessToken };
   }
 
-  async signout(refreshToken: string, res: Response) {
-    try {
-      const userData = this.jwtService.verify(refreshToken, {
-        secret: process.env.REFRESH_TOKEN_KEY,
-      });
-
-      if (!userData) {
-        throw new ForbiddenException("User not verified");
+  async signout(userId: number, res: Response): Promise<boolean> {
+    const user = await this.prismaService.users.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        hashedRefreshToken: null
       }
-
-      const user = await this.prismaService.users.findUnique({
-        where: { id: userData.id },
-      });
-
-      if (!user) {
-        throw new BadRequestException("Invalid token");
-      }
-
-      await this.prismaService.users.update({
-        where: { id: user.id },
-        data: { hashedRefreshToken: null },
-      });
-
-      res.clearCookie("refreshToken");
-
-      return {
-        message: "User logged out successfully",
-      };
-    } catch (error) {
-      throw new ForbiddenException("Invalid or expired token");
+    })
+    if (!user){
+      throw new ForbiddenException("Access denied")
     }
+    res.clearCookie("refreshToken");
+    return true
   }
 
-  async refreshToken(userId: number, refreshToken: string, res: Response) {
+  async refreshToken(userId: number, refreshToken: string, res: Response): Promise<ResponseFields> {
     try {
       const decoded = this.jwtService.verify(refreshToken, {
         secret: process.env.REFRESH_TOKEN_KEY,
