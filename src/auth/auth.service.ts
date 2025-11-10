@@ -12,7 +12,7 @@ import { CreateUserDto, SignInUserDto } from "../user/dto";
 import { UserService } from "../user/user.service";
 import bcrypt from "bcrypt";
 import { Response } from "express";
-import { JwtPayload, ResponseFields, Tokens } from "../../common/types";
+import { JwtPayload, ResponseFields, Tokens } from "../common/types";
 
 @Injectable()
 export class AuthService {
@@ -22,7 +22,7 @@ export class AuthService {
     private readonly userService: UserService
   ) {}
 
-  private async genereteTokens(user: Users):Promise<Tokens> {
+  private async genereteTokens(user: Users): Promise<Tokens> {
     const paylod: JwtPayload = {
       id: user.id,
       email: user.email,
@@ -58,7 +58,10 @@ export class AuthService {
     };
   }
 
-  async signin(signinUserDto: SignInUserDto, res: Response): Promise<ResponseFields> {
+  async signin(
+    signinUserDto: SignInUserDto,
+    res: Response
+  ): Promise<ResponseFields> {
     const user = await this.prismaService.users.findUnique({
       where: { email: signinUserDto.email },
     });
@@ -92,17 +95,21 @@ export class AuthService {
         id: userId,
       },
       data: {
-        hashedRefreshToken: null
-      }
-    })
-    if (!user){
-      throw new ForbiddenException("Access denied")
+        hashedRefreshToken: null,
+      },
+    });
+    if (!user) {
+      throw new ForbiddenException("Access denied");
     }
     res.clearCookie("refreshToken");
-    return true
+    return true;
   }
 
-  async refreshToken(userId: number, refreshToken: string, res: Response): Promise<ResponseFields> {
+  async refreshToken(
+    userId: number,
+    refreshToken: string,
+    res: Response
+  ): Promise<ResponseFields> {
     try {
       const decoded = this.jwtService.verify(refreshToken, {
         secret: process.env.REFRESH_TOKEN_KEY,

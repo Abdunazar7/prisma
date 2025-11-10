@@ -17,10 +17,10 @@ import { CreateAuthDto } from "./dto/create-auth.dto";
 import { UpdateAuthDto } from "./dto/update-auth.dto";
 import { CreateUserDto, SignInUserDto } from "../user/dto";
 import type { Response } from "express";
-import { CookieGetter } from "../../common/decorators/cookie-getter.decorat";
-import { RefreshTokenGuard } from "../../common/guards";
-import { GetCurrentUser, GetCurrentUserId } from "../../common/decorators";
-import { JwtPayloadWithRefreshToken, ResponseFields } from "../../common/types";
+import { CookieGetter } from "../common/decorators/cookie-getter.decorat";
+import { RefreshTokenGuard } from "../common/guards";
+import { GetCurrentUser, GetCurrentUserId } from "../common/decorators";
+import { JwtPayloadWithRefreshToken, ResponseFields } from "../common/types";
 import { use } from "passport";
 
 @Controller("auth")
